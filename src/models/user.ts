@@ -48,7 +48,7 @@ const UserSchema = new Schema<IUser>(
 		},
 		emailVerified: {
 			type: Boolean,
-			default: false,
+			default: true,
 		},
 		verificationToken: {
 			type: String,
