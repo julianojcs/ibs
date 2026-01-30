@@ -1,0 +1,234 @@
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { Metadata } from 'next'
+import {
+	MapPin,
+	Phone,
+	Mail,
+	Linkedin,
+	Instagram,
+	Github,
+	ArrowLeft,
+	GraduationCap,
+} from 'lucide-react'
+import { auth } from '@/lib/auth'
+import { connectDB } from '@/lib/db'
+import { User } from '@/models/user'
+import { Photo } from '@/models/photo'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import Image from 'next/image'
+
+interface PageParams {
+	params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+	const { id } = await params
+	await connectDB()
+	const user = await User.findById(id).lean()
+
+	if (!user) {
+		return { title: 'User not found' }
+	}
+
+	return { title: user.name }
+}
+
+const roleColors: Record<string, string> = {
+	student: 'bg-blue-500/10 text-blue-500',
+	teacher: 'bg-purple-500/10 text-purple-500',
+	advisor: 'bg-green-500/10 text-green-500',
+	coordinator: 'bg-orange-500/10 text-orange-500',
+	guest: 'bg-gray-500/10 text-gray-500',
+}
+
+export default async function ColleagueDetailPage({ params }: PageParams) {
+	const { id } = await params
+	const session = await auth()
+
+	await connectDB()
+
+	const [user, photos] = await Promise.all([
+		User.findById(id)
+			.select('-password -verificationToken -resetPasswordToken')
+			.lean(),
+		Photo.find({ uploadedBy: id, isPublic: true })
+			.sort({ createdAt: -1 })
+			.limit(6)
+			.lean(),
+	])
+
+	if (!user) {
+		notFound()
+	}
+
+	const isOwnProfile = session?.user?.id === id
+
+	const getInitials = (name: string) => {
+		return name
+			.split(' ')
+			.map((n) => n[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2)
+	}
+
+	return (
+		<div className="max-w-4xl mx-auto space-y-6">
+			{/* Back Button */}
+			<Link href="/colleagues">
+				<Button variant="ghost" size="sm">
+					<ArrowLeft className="mr-2 h-4 w-4" />
+					Back to classmates
+				</Button>
+			</Link>
+
+			{/* Profile Card */}
+			<Card>
+				<CardContent className="pt-6">
+					<div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+						<Avatar className="h-32 w-32 ring-4 ring-offset-4 ring-primary/20">
+							<AvatarImage src={user.avatar} alt={user.name} />
+							<AvatarFallback className="text-4xl bg-primary/10">
+								{getInitials(user.name)}
+							</AvatarFallback>
+						</Avatar>
+
+						<div className="flex-1 text-center md:text-left">
+							<div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+								<h1 className="text-3xl font-bold">{user.name}</h1>
+								<Badge
+									className={`${roleColors[user.role] || roleColors.guest} w-fit mx-auto md:mx-0`}
+								>
+									{user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+								</Badge>
+							</div>
+
+							<div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground mb-4">
+								<GraduationCap className="h-4 w-4" />
+								<span>{user.courseNumber}</span>
+							</div>
+
+							<div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground mb-4">
+								<MapPin className="h-4 w-4" />
+								<span>
+									{user.city}, {user.country}
+								</span>
+							</div>
+
+							<div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+								{user.email && (
+									<Button variant="outline" size="sm" asChild>
+										<a href={`mailto:${user.email}`}>
+											<Mail className="mr-2 h-4 w-4" />
+											Email
+										</a>
+									</Button>
+								)}
+
+								{user.whatsapp && (
+									<Button variant="outline" size="sm" asChild>
+										<a
+											href={`https://wa.me/${user.whatsapp.replace(/\D/g, '')}`}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											<Phone className="mr-2 h-4 w-4" />
+											WhatsApp
+										</a>
+									</Button>
+								)}
+
+								{isOwnProfile && (
+									<Link href="/profile">
+										<Button size="sm">Edit Profile</Button>
+									</Link>
+								)}
+							</div>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+
+			{/* Social Links */}
+			{(user.linkedin || user.instagram || user.github) && (
+				<Card>
+					<CardHeader>
+						<CardTitle>Social Profiles</CardTitle>
+					</CardHeader>
+					<CardContent className="flex flex-wrap gap-4">
+						{user.linkedin && (
+							<Button variant="outline" asChild>
+								<a
+									href={user.linkedin}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<Linkedin className="mr-2 h-4 w-4 text-blue-600" />
+									LinkedIn
+								</a>
+							</Button>
+						)}
+
+						{user.instagram && (
+							<Button variant="outline" asChild>
+								<a
+									href={`https://instagram.com/${user.instagram.replace('@', '')}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<Instagram className="mr-2 h-4 w-4 text-pink-600" />
+									@{user.instagram.replace('@', '')}
+								</a>
+							</Button>
+						)}
+
+						{user.github && (
+							<Button variant="outline" asChild>
+								<a href={user.github} target="_blank" rel="noopener noreferrer">
+									<Github className="mr-2 h-4 w-4" />
+									GitHub
+								</a>
+							</Button>
+						)}
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Photos */}
+			{photos.length > 0 && (
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between">
+						<CardTitle>Photos</CardTitle>
+						<Link href={`/gallery?userId=${id}`}>
+							<Button variant="ghost" size="sm">
+								View all
+							</Button>
+						</Link>
+					</CardHeader>
+					<CardContent>
+						<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+							{photos.map((photo) => (
+								<div
+									key={photo._id.toString()}
+									className="relative aspect-square rounded-lg overflow-hidden"
+								>
+									<Image
+										src={photo.thumbnailUrl || photo.url}
+										alt={photo.title || 'Photo'}
+										fill
+										className="object-cover hover:scale-105 transition-transform"
+									/>
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			)}
+		</div>
+	)
+}
