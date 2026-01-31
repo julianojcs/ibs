@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,6 +16,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
+import { COUNTRIES } from '@/lib/constants'
 import { registerSchema, type RegisterFormData } from '@/lib/validations'
 
 export function RegisterForm() {
@@ -24,14 +32,38 @@ export function RegisterForm() {
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState(false)
+	const [courses, setCourses] = useState<{ name: string; code: string }[]>([])
+	const [isFetchingCourses, setIsFetchingCourses] = useState(true)
 
 	const {
 		register,
 		handleSubmit,
+		setValue,
+		watch,
 		formState: { errors },
 	} = useForm<RegisterFormData>({
 		resolver: zodResolver(registerSchema),
 	})
+
+	const selectedCourse = watch('courseName')
+	const selectedCountry = watch('country')
+
+	useEffect(() => {
+		const fetchCourses = async () => {
+			try {
+				const response = await fetch('/api/courses')
+				if (response.ok) {
+					const data = await response.json()
+					setCourses(data)
+				}
+			} catch (error) {
+				console.error('Failed to fetch courses:', error)
+			} finally {
+				setIsFetchingCourses(false)
+			}
+		}
+		fetchCourses()
+	}, [])
 
 	const handleFormSubmit = async (data: RegisterFormData) => {
 		setIsLoading(true)
@@ -219,16 +251,32 @@ export function RegisterForm() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="courseNumber">Course Number</Label>
-						<Input
-							id="courseNumber"
-							placeholder="e.g., IBS-2025-1"
-							disabled={isLoading}
-							{...register('courseNumber')}
-						/>
-						{errors.courseNumber && (
+						<Label htmlFor="courseName">Course Name</Label>
+						<Select
+							value={selectedCourse}
+							onValueChange={(value) => setValue('courseName', value, { shouldValidate: true })}
+							disabled={isLoading || isFetchingCourses}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder={isFetchingCourses ? "Loading courses..." : "Select course"} />
+							</SelectTrigger>
+							<SelectContent>
+								{courses.length > 0 ? (
+									courses.map((course) => (
+										<SelectItem key={course.code} value={course.name} textValue={course.code}>
+											{course.name} ({course.code})
+										</SelectItem>
+									))
+								) : (
+									<SelectItem value="_empty" disabled>
+										{isFetchingCourses ? "Loading..." : "No courses available"}
+									</SelectItem>
+								)}
+							</SelectContent>
+						</Select>
+						{errors.courseName && (
 							<p className="text-sm text-destructive">
-								{errors.courseNumber.message}
+								{errors.courseName.message}
 							</p>
 						)}
 					</div>
@@ -253,18 +301,55 @@ export function RegisterForm() {
 
 						<div className="space-y-2">
 							<Label htmlFor="country">Country</Label>
-							<Input
-								id="country"
-								placeholder="Brazil"
+							<Select
+								value={selectedCountry}
+								onValueChange={(value) => setValue('country', value, { shouldValidate: true })}
 								disabled={isLoading}
-								{...register('country')}
-							/>
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select country" />
+								</SelectTrigger>
+								<SelectContent>
+									{COUNTRIES.map((country) => (
+										<SelectItem key={country} value={country}>
+											{country}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 							{errors.country && (
 								<p className="text-sm text-destructive">
 									{errors.country.message}
 								</p>
 							)}
 						</div>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="company">Company / Current Job</Label>
+						<Input
+							id="company"
+							placeholder="e.g., Google, Freelancer, etc."
+							{...register('company')}
+							disabled={isLoading}
+						/>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="bio">Mini Bio</Label>
+						<textarea
+							id="bio"
+							rows={3}
+							className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+							placeholder="Brief introduction..."
+							{...register('bio')}
+							disabled={isLoading}
+						/>
+						{errors.bio && (
+							<p className="text-sm text-destructive">
+								{errors.bio.message}
+							</p>
+						)}
 					</div>
 
 					<Button type="submit" className="w-full" disabled={isLoading}>

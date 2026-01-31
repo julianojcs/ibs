@@ -22,7 +22,7 @@ interface IUser {
 	name: string
 	avatar?: string
 	role: string
-	courseNumber: string
+	courseName: string
 	city: string
 	country: string
 	phone?: string
@@ -30,6 +30,9 @@ interface IUser {
 	linkedin?: string
 	instagram?: string
 	github?: string
+	twitter?: string
+	bio?: string
+	emailVerified: boolean
 }
 
 interface PaginationData {

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Camera, Save } from 'lucide-react'
+import { Loader2, Camera, Save, CheckCircle2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -20,13 +20,15 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { profileSchema, type ProfileFormData } from '@/lib/validations'
-import { USER_ROLES } from '@/lib/constants'
+import { USER_ROLES, COUNTRIES } from '@/lib/constants'
 
 export default function ProfilePage() {
 	const { data: session, update } = useSession()
 	const [isLoading, setIsLoading] = useState(false)
 	const [isUploading, setIsUploading] = useState(false)
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+	const [courses, setCourses] = useState<{ name: string; code: string }[]>([])
+	const [isFetchingCourses, setIsFetchingCourses] = useState(true)
 	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	const {
@@ -34,24 +36,102 @@ export default function ProfilePage() {
 		handleSubmit,
 		setValue,
 		watch,
+		reset,
 		formState: { errors },
 	} = useForm<ProfileFormData>({
 		resolver: zodResolver(profileSchema),
 		defaultValues: {
 			name: session?.user?.name || '',
+			email: session?.user?.email || '',
 			role: (session?.user?.role as ProfileFormData['role']) || 'student',
-			courseNumber: '',
-			city: '',
-			country: '',
-			phone: '',
-			whatsapp: '',
-			linkedin: '',
-			instagram: '',
-			github: '',
+			courseName: session?.user?.courseName || '',
+			city: session?.user?.city || '',
+			country: session?.user?.country || '',
+			phone: session?.user?.phone || '',
+			whatsapp: session?.user?.whatsapp || '',
+			linkedin: session?.user?.linkedin || '',
+			instagram: session?.user?.instagram || '',
+			github: session?.user?.github || '',
+			twitter: session?.user?.twitter || '',
+			company: session?.user?.company || '',
+			bio: session?.user?.bio || '',
 		},
 	})
 
 	const selectedRole = watch('role')
+	const selectedCourse = watch('courseName')
+	const selectedCountry = watch('country')
+
+	// Update form values when session is loaded
+	useEffect(() => {
+		if (session?.user) {
+			reset({
+				name: session.user.name || '',
+				email: session.user.email || '',
+				role: (session.user.role as ProfileFormData['role']) || 'student',
+				courseName: session.user.courseName || '',
+				city: session.user.city || '',
+				country: session.user.country || '',
+				phone: session.user.phone || '',
+				whatsapp: session.user.whatsapp || '',
+				linkedin: session.user.linkedin || '',
+				instagram: session.user.instagram || '',
+				github: session.user.github || '',
+				twitter: session.user.twitter || '',
+				company: session.user.company || '',
+				bio: session.user.bio || '',
+			})
+		}
+	}, [session, reset])
+
+	useEffect(() => {
+		const fetchCourses = async () => {
+			try {
+				const response = await fetch('/api/courses')
+				if (response.ok) {
+					const data = await response.json()
+					setCourses(data)
+				}
+			} catch (error) {
+				console.error('Failed to fetch courses:', error)
+			} finally {
+				setIsFetchingCourses(false)
+			}
+		}
+		fetchCourses()
+	}, [])
+
+	const formatPhoneNumber = (value: string) => {
+		// Ensure it starts with +
+		let cleaned = value.replace(/[^\d+]/g, '')
+		if (cleaned && !cleaned.startsWith('+')) {
+			cleaned = '+' + cleaned
+		}
+
+		// Apply a general international format: +XX (XX) XXXXX-XXXX
+		// This is a bit tricky for all countries, but we'll try to follow a common pattern
+		const digits = cleaned.replace(/\D/g, '')
+
+		if (digits.length <= 2) return cleaned
+
+		let formatted = '+' + digits.substring(0, 2)
+		if (digits.length > 2) {
+			formatted += ' (' + digits.substring(2, 4)
+		}
+		if (digits.length > 4) {
+			formatted += ') ' + digits.substring(4, 9)
+		}
+		if (digits.length > 9) {
+			formatted += '-' + digits.substring(9, 13)
+		}
+
+		return formatted.substring(0, 19)
+	}
+
+	const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'phone' | 'whatsapp') => {
+		const formatted = formatPhoneNumber(e.target.value)
+		setValue(fieldName, formatted, { shouldValidate: true })
+	}
 
 	const handleAvatarClick = () => {
 		fileInputRef.current?.click()
@@ -120,7 +200,19 @@ export default function ProfilePage() {
 
 			await update({
 				name: data.name,
+				email: data.email,
 				role: data.role,
+				courseName: data.courseName,
+				city: data.city,
+				country: data.country,
+				phone: data.phone,
+				whatsapp: data.whatsapp,
+				linkedin: data.linkedin,
+				instagram: data.instagram,
+				github: data.github,
+				twitter: data.twitter,
+				company: data.company,
+				bio: data.bio,
 			})
 
 			toast.success('Profile updated successfully!')
@@ -212,6 +304,29 @@ export default function ProfilePage() {
 								)}
 							</div>
 
+							<div className="col-span-2 space-y-2">
+								<div className="flex items-center gap-2">
+									<Label htmlFor="email">Email Address</Label>
+									{session?.user?.isEmailVerified ? (
+										<div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+											<CheckCircle2 className="h-3 w-3" />
+											<span>Verified</span>
+										</div>
+									) : (
+										<div className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+											<AlertCircle className="h-3 w-3" />
+											<span>Unverified</span>
+										</div>
+									)}
+								</div>
+								<Input id="email" type="email" {...register('email')} disabled={isLoading} />
+								{errors.email && (
+									<p className="text-sm text-destructive">
+										{errors.email.message}
+									</p>
+								)}
+							</div>
+
 							<div className="space-y-2">
 								<Label htmlFor="role">Role</Label>
 								<Select
@@ -240,16 +355,42 @@ export default function ProfilePage() {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="courseNumber">Course Number</Label>
+								<Label htmlFor="company">Company / Current Job</Label>
 								<Input
-									id="courseNumber"
-									placeholder="e.g., IBS-2025-1"
-									{...register('courseNumber')}
+									id="company"
+									placeholder="e.g., Google, Freelancer, etc."
+									{...register('company')}
 									disabled={isLoading}
 								/>
-								{errors.courseNumber && (
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="courseName">Course Name</Label>
+								<Select
+									value={selectedCourse}
+									onValueChange={(value) => setValue('courseName', value)}
+									disabled={isLoading || isFetchingCourses}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder={isFetchingCourses ? "Loading courses..." : "Select course"} />
+									</SelectTrigger>
+									<SelectContent>
+										{courses.length > 0 ? (
+											courses.map((course) => (
+												<SelectItem key={course.code} value={course.name} textValue={course.code}>
+													{course.name} ({course.code})
+												</SelectItem>
+											))
+										) : (
+											<SelectItem value="_empty" disabled>
+												{isFetchingCourses ? "Loading..." : "No courses available"}
+											</SelectItem>
+										)}
+									</SelectContent>
+								</Select>
+								{errors.courseName && (
 									<p className="text-sm text-destructive">
-										{errors.courseNumber.message}
+										{errors.courseName.message}
 									</p>
 								)}
 							</div>
@@ -270,11 +411,22 @@ export default function ProfilePage() {
 
 							<div className="space-y-2">
 								<Label htmlFor="country">Country</Label>
-								<Input
-									id="country"
-									{...register('country')}
+								<Select
+									value={selectedCountry}
+									onValueChange={(value) => setValue('country', value)}
 									disabled={isLoading}
-								/>
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select country" />
+									</SelectTrigger>
+									<SelectContent>
+										{COUNTRIES.map((country) => (
+											<SelectItem key={country} value={country}>
+												{country}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 								{errors.country && (
 									<p className="text-sm text-destructive">
 										{errors.country.message}
@@ -286,8 +438,9 @@ export default function ProfilePage() {
 								<Label htmlFor="phone">Phone (with DDI)</Label>
 								<Input
 									id="phone"
-									placeholder="+55 11 99999-9999"
+									placeholder="+55 (11) 99999-9999"
 									{...register('phone')}
+									onChange={(e) => handlePhoneChange(e, 'phone')}
 									disabled={isLoading}
 								/>
 							</div>
@@ -296,8 +449,9 @@ export default function ProfilePage() {
 								<Label htmlFor="whatsapp">WhatsApp (with DDI)</Label>
 								<Input
 									id="whatsapp"
-									placeholder="+55 11 99999-9999"
+									placeholder="+55 (11) 99999-9999"
 									{...register('whatsapp')}
+									onChange={(e) => handlePhoneChange(e, 'whatsapp')}
 									disabled={isLoading}
 								/>
 							</div>
@@ -328,6 +482,16 @@ export default function ProfilePage() {
 							</div>
 
 							<div className="space-y-2">
+								<Label htmlFor="twitter">X (Twitter)</Label>
+								<Input
+									id="twitter"
+									placeholder="@username"
+									{...register('twitter')}
+									disabled={isLoading}
+								/>
+							</div>
+
+							<div className="space-y-2">
 								<Label htmlFor="github">GitHub URL</Label>
 								<Input
 									id="github"
@@ -338,6 +502,23 @@ export default function ProfilePage() {
 								{errors.github && (
 									<p className="text-sm text-destructive">
 										{errors.github.message}
+									</p>
+								)}
+							</div>
+
+							<div className="col-span-2 space-y-2">
+								<Label htmlFor="bio">Mini Bio</Label>
+								<textarea
+									id="bio"
+									rows={4}
+									className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+									placeholder="Tell us a bit about yourself..."
+									{...register('bio')}
+									disabled={isLoading}
+								/>
+								{errors.bio && (
+									<p className="text-sm text-destructive">
+										{errors.bio.message}
 									</p>
 								)}
 							</div>

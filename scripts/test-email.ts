@@ -40,12 +40,15 @@ async function testEmail() {
 		// Criar transporter
 		const transporter = nodemailer.createTransport({
 			host: process.env.EMAIL_HOST,
-			port: parseInt(process.env.EMAIL_PORT || '587'),
-			secure: false, // true para 465, false para outras portas
+			port: parseInt(process.env.EMAIL_PORT || '465'),
+      secure: process.env.SERVER_SECURE === 'true',
 			auth: {
 				user: process.env.EMAIL_USER,
 				pass: process.env.EMAIL_PASS,
 			},
+      tls: {
+        rejectUnauthorized: false
+      },
 			debug: true, // Log de debug
 			logger: true, // Exibir logs
 		})

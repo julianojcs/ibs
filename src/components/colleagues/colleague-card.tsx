@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MapPin, Phone, Linkedin, Instagram, Github, Mail } from 'lucide-react'
+import { MapPin, Phone, Linkedin, Instagram, Github, Mail, Twitter, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,7 +11,7 @@ interface IUser {
 	name: string
 	avatar?: string
 	role: string
-	courseNumber: string
+	courseName: string
 	city: string
 	country: string
 	phone?: string
@@ -19,6 +19,9 @@ interface IUser {
 	linkedin?: string
 	instagram?: string
 	github?: string
+	twitter?: string
+	bio?: string
+	emailVerified: boolean
 }
 
 interface ColleagueCardProps {
@@ -67,10 +70,16 @@ export function ColleagueCard({ colleague }: ColleagueCardProps) {
 					</Badge>
 
 					<p className="text-sm text-muted-foreground mt-2">
-						{colleague.courseNumber}
+						{colleague.courseName}
 					</p>
 
-					<div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+					{colleague.bio && (
+						<p className="text-sm mt-3 line-clamp-3 text-muted-foreground italic px-4 py-2 bg-muted/30 rounded-lg w-full">
+							&quot;{colleague.bio}&quot;
+						</p>
+					)}
+
+					<div className="flex items-center gap-1 text-sm text-muted-foreground mt-3">
 						<MapPin className="h-3 w-3" />
 						<span>
 							{colleague.city}, {colleague.country}
@@ -79,37 +88,47 @@ export function ColleagueCard({ colleague }: ColleagueCardProps) {
 
 					<div className="flex items-center gap-2 mt-4">
 						{colleague.email && (
-							<Button
-								variant="ghost"
-								size="icon"
-								className="h-8 w-8"
-								asChild
-							>
-								<a
-									href={`mailto:${colleague.email}`}
-									aria-label="Send email"
-									tabIndex={0}
+							<div className="relative">
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+									asChild
 								>
-									<Mail className="h-4 w-4" />
-								</a>
-							</Button>
+									<a
+										href={`mailto:${colleague.email}`}
+										aria-label="Send email"
+										tabIndex={0}
+									>
+										<Mail className="h-4 w-4" />
+									</a>
+								</Button>
+								<div className="absolute -top-1 -right-1">
+									{colleague.emailVerified ? (
+										<CheckCircle2 className="h-3 w-3 text-green-500 fill-white" />
+									) : (
+										<AlertCircle className="h-3 w-3 text-amber-500 fill-white" />
+									)}
+								</div>
+							</div>
 						)}
 
 						{colleague.whatsapp && (
 							<Button
 								variant="ghost"
 								size="icon"
-								className="h-8 w-8"
+								className="h-8 w-8 text-green-600 dark:text-green-500 hover:text-green-700 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30"
 								asChild
 							>
 								<a
 									href={`https://wa.me/${colleague.whatsapp.replace(/\D/g, '')}`}
 									target="_blank"
 									rel="noopener noreferrer"
-									aria-label="WhatsApp"
+									title="WhatsApp"
+									aria-label="Chat on WhatsApp"
 									tabIndex={0}
 								>
-									<Phone className="h-4 w-4" />
+									<MessageCircle className="h-4 w-4" />
 								</a>
 							</Button>
 						)}
@@ -118,7 +137,7 @@ export function ColleagueCard({ colleague }: ColleagueCardProps) {
 							<Button
 								variant="ghost"
 								size="icon"
-								className="h-8 w-8"
+								className="h-8 w-8 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30"
 								asChild
 							>
 								<a
@@ -137,7 +156,7 @@ export function ColleagueCard({ colleague }: ColleagueCardProps) {
 							<Button
 								variant="ghost"
 								size="icon"
-								className="h-8 w-8"
+								className="h-8 w-8 text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-950/30"
 								asChild
 							>
 								<a
@@ -152,11 +171,31 @@ export function ColleagueCard({ colleague }: ColleagueCardProps) {
 							</Button>
 						)}
 
+						{colleague.twitter && (
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-8 w-8 text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+								asChild
+							>
+								<a
+									href={`https://x.com/${colleague.twitter.replace('@', '')}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									title="X (Twitter) profile"
+									aria-label="X profile"
+									tabIndex={0}
+								>
+									<Twitter className="h-4 w-4" />
+								</a>
+							</Button>
+						)}
+
 						{colleague.github && (
 							<Button
 								variant="ghost"
 								size="icon"
-								className="h-8 w-8"
+								className="h-8 w-8 text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-colors"
 								asChild
 							>
 								<a

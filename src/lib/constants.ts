@@ -17,3 +17,37 @@ export const COURSE_TYPES = {
 } as const
 
 export type CourseType = typeof COURSE_TYPES[keyof typeof COURSE_TYPES]
+
+export const COUNTRIES = [
+    "Brazil",
+    "Argentina",
+    "Australia",
+    "Belize",
+    "Bolivia",
+    "Canada",
+    "Chile",
+    "Colombia",
+    "Costa Rica",
+    "Ecuador",
+    "El Salvador",
+    "France",
+    "French Guiana",
+    "Germany",
+    "Guatemala",
+    "Guyana",
+    "Honduras",
+    "Italy",
+    "Mexico",
+    "Nicaragua",
+    "Panama",
+    "Paraguay",
+    "Peru",
+    "Portugal",
+    "Spain",
+    "Suriname",
+    "United Kingdom",
+    "United States",
+    "Uruguay",
+    "Venezuela",
+    "Other"
+] as const

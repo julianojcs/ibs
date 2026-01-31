@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
 		const { searchParams } = new URL(req.url)
 		const search = searchParams.get('search') || ''
-		const courseNumber = searchParams.get('courseNumber') || ''
+		const courseName = searchParams.get('courseName') || ''
 		const country = searchParams.get('country') || ''
 		const role = searchParams.get('role') || ''
 		const page = parseInt(searchParams.get('page') || '1')
@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
 			query.$text = { $search: search }
 		}
 
-		if (courseNumber) {
-			query.courseNumber = courseNumber
+		if (courseName) {
+			query.courseName = courseName
 		}
 
 		if (country) {
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
 		const [users, total] = await Promise.all([
 			User.find(query)
-				.select('-password -verificationToken -resetPasswordToken')
+				.select('name email avatar role courseName city country phone whatsapp linkedin instagram github twitter bio company emailVerified isActive')
 				.sort({ name: 1 })
 				.skip(skip)
 				.limit(limit)

@@ -10,6 +10,10 @@ import {
 	Github,
 	ArrowLeft,
 	GraduationCap,
+	CheckCircle2,
+	AlertCircle,
+	Twitter,
+	MessageCircle,
 } from 'lucide-react'
 import { auth } from '@/lib/auth'
 import { connectDB } from '@/lib/db'
@@ -110,22 +114,37 @@ export default async function ColleagueDetailPage({ params }: PageParams) {
 
 							<div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground mb-4">
 								<GraduationCap className="h-4 w-4" />
-								<span>{user.courseNumber}</span>
+								<span>{user.courseName}</span>
 							</div>
 
-							<div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground mb-4">
+							<div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground mb-6">
 								<MapPin className="h-4 w-4" />
 								<span>
 									{user.city}, {user.country}
 								</span>
 							</div>
 
+							{user.bio && (
+								<div className="mb-6 py-3 px-4 bg-muted/30 rounded-lg border border-border/50">
+									<p className="text-foreground/90 whitespace-pre-wrap italic text-sm md:text-base leading-relaxed">
+										&quot;{user.bio}&quot;
+									</p>
+								</div>
+							)}
+
 							<div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
 								{user.email && (
-									<Button variant="outline" size="sm" asChild>
+									<Button variant="outline" size="sm" asChild className="relative">
 										<a href={`mailto:${user.email}`}>
 											<Mail className="mr-2 h-4 w-4" />
 											Email
+											<div className="absolute -top-1 -right-1">
+												{user.emailVerified ? (
+													<CheckCircle2 className="h-3 w-3 text-green-500 fill-white" />
+												) : (
+													<AlertCircle className="h-3 w-3 text-amber-500 fill-white" />
+												)}
+											</div>
 										</a>
 									</Button>
 								)}
@@ -137,7 +156,7 @@ export default async function ColleagueDetailPage({ params }: PageParams) {
 											target="_blank"
 											rel="noopener noreferrer"
 										>
-											<Phone className="mr-2 h-4 w-4" />
+											<MessageCircle className="mr-2 h-4 w-4" />
 											WhatsApp
 										</a>
 									</Button>
@@ -155,43 +174,56 @@ export default async function ColleagueDetailPage({ params }: PageParams) {
 			</Card>
 
 			{/* Social Links */}
-			{(user.linkedin || user.instagram || user.github) && (
+			{(user.linkedin || user.instagram || user.github || user.twitter) && (
 				<Card>
 					<CardHeader>
 						<CardTitle>Social Profiles</CardTitle>
 					</CardHeader>
 					<CardContent className="flex flex-wrap gap-4">
 						{user.linkedin && (
-							<Button variant="outline" asChild>
+							<Button variant="outline" className="border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/30" asChild>
 								<a
 									href={user.linkedin}
 									target="_blank"
 									rel="noopener noreferrer"
 								>
 									<Linkedin className="mr-2 h-4 w-4 text-blue-600" />
-									LinkedIn
+									<span className="text-blue-700 dark:text-blue-300">LinkedIn</span>
 								</a>
 							</Button>
 						)}
 
 						{user.instagram && (
-							<Button variant="outline" asChild>
+							<Button variant="outline" className="border-pink-200 dark:border-pink-900/50 hover:bg-pink-50 dark:hover:bg-pink-950/30" asChild>
 								<a
 									href={`https://instagram.com/${user.instagram.replace('@', '')}`}
 									target="_blank"
 									rel="noopener noreferrer"
 								>
 									<Instagram className="mr-2 h-4 w-4 text-pink-600" />
-									@{user.instagram.replace('@', '')}
+									<span className="text-pink-700 dark:text-pink-300">@{user.instagram.replace('@', '')}</span>
+								</a>
+							</Button>
+						)}
+
+						{user.twitter && (
+							<Button variant="outline" className="border-sky-200 dark:border-sky-900/50 hover:bg-sky-50 dark:hover:bg-sky-950/30" asChild>
+								<a
+									href={`https://x.com/${user.twitter.replace('@', '')}`}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<Twitter className="mr-2 h-4 w-4 text-sky-500" />
+									<span className="text-sky-700 dark:text-sky-300">@{user.twitter.replace('@', '')}</span>
 								</a>
 							</Button>
 						)}
 
 						{user.github && (
-							<Button variant="outline" asChild>
+							<Button variant="outline" className="hover:bg-muted" asChild>
 								<a href={user.github} target="_blank" rel="noopener noreferrer">
-									<Github className="mr-2 h-4 w-4" />
-									GitHub
+									<Github className="mr-2 h-4 w-4 text-foreground/80" />
+									<span className="text-foreground/90">GitHub</span>
 								</a>
 							</Button>
 						)}

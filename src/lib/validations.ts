@@ -20,15 +20,28 @@ export const registerSchema = z.object({
 			'Password must contain at least one uppercase letter, one lowercase letter, and one number'
 		),
 	confirmPassword: z.string(),
-	courseNumber: z
+	courseName: z
 		.string()
-		.min(1, 'Course number is required'),
+		.min(1, 'Course name is required'),
 	city: z
 		.string()
 		.min(1, 'City is required'),
 	country: z
 		.string()
 		.min(1, 'Country is required'),
+	company: z
+		.string()
+		.optional()
+		.or(z.literal('')),
+	bio: z
+		.string()
+		.max(500, 'Mini Bio cannot exceed 500 characters')
+		.optional()
+		.or(z.literal('')),
+	twitter: z
+		.string()
+		.optional()
+		.or(z.literal('')),
 }).refine((data) => data.password === data.confirmPassword, {
 	message: 'Passwords do not match',
 	path: ['confirmPassword'],
@@ -88,13 +101,16 @@ export const profileSchema = z.object({
 		.string()
 		.min(2, 'Name must be at least 2 characters')
 		.max(100, 'Name cannot exceed 100 characters'),
+	email: z
+		.string()
+		.email('Please enter a valid email address'),
 	role: z.enum(
 		Object.values(USER_ROLES) as [string, ...string[]],
 		{ message: 'Role is required' }
 	),
-	courseNumber: z
+	courseName: z
 		.string()
-		.min(1, 'Course number is required'),
+		.min(1, 'Course name is required'),
 	city: z
 		.string()
 		.min(1, 'City is required'),
@@ -121,6 +137,19 @@ export const profileSchema = z.object({
 	github: z
 		.string()
 		.url('Please enter a valid URL')
+		.optional()
+		.or(z.literal('')),
+	twitter: z
+		.string()
+		.optional()
+		.or(z.literal('')),
+	company: z
+		.string()
+		.optional()
+		.or(z.literal('')),
+	bio: z
+		.string()
+		.max(500, 'Mini Bio cannot exceed 500 characters')
 		.optional()
 		.or(z.literal('')),
 })

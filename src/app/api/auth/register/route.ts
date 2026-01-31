@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 			)
 		}
 
-		const { name, email, password, courseNumber, city, country } =
+		const { name, email, password, courseName, city, country, company, bio, twitter } =
 			validationResult.data
 
 		await connectDB()
@@ -48,9 +48,12 @@ export async function POST(req: NextRequest) {
 			name,
 			email: email.toLowerCase(),
 			password: hashedPassword,
-			courseNumber,
+			courseName,
 			city,
 			country,
+			company,
+			bio,
+			twitter,
 			verificationToken,
 			verificationTokenExpires,
 			emailVerified: false,

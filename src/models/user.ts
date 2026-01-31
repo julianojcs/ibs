@@ -16,7 +16,7 @@ export interface IUser extends Document {
 	name: string
 	avatar?: string
 	role: UserRole
-	courseNumber: string
+	courseName: string
 	city: string
 	country: string
 	phone?: string
@@ -24,6 +24,9 @@ export interface IUser extends Document {
 	linkedin?: string
 	instagram?: string
 	github?: string
+	twitter?: string
+	bio?: string
+	company?: string
 	googleId?: string
 	isActive: boolean
 	createdAt: Date
@@ -79,9 +82,9 @@ const UserSchema = new Schema<IUser>(
 			enum: Object.values(USER_ROLES),
 			default: USER_ROLES.STUDENT,
 		},
-		courseNumber: {
+		courseName: {
 			type: String,
-			required: [true, 'Course number is required'],
+			required: [true, 'Course name is required'],
 		},
 		city: {
 			type: String,
@@ -106,6 +109,17 @@ const UserSchema = new Schema<IUser>(
 		github: {
 			type: String,
 		},
+		twitter: {
+			type: String,
+		},
+		bio: {
+			type: String,
+			maxlength: [500, 'Mini Bio cannot exceed 500 characters'],
+		},
+		company: {
+			type: String,
+			trim: true,
+		},
 		googleId: {
 			type: String,
 			unique: true,
@@ -123,7 +137,7 @@ const UserSchema = new Schema<IUser>(
 
 // Note: email index is already created by unique: true
 // googleId index is already created by unique: true, sparse: true
-UserSchema.index({ courseNumber: 1 })
+UserSchema.index({ courseName: 1 })
 UserSchema.index({ country: 1, city: 1 })
 UserSchema.index({ name: 'text' })
 

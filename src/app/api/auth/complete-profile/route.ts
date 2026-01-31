@@ -5,10 +5,10 @@ import { User } from '@/models/user'
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json()
-		const { email, name, googleId, avatar, courseNumber, city, country, role } =
+		const { email, name, googleId, avatar, courseName, city, country, role } =
 			body
 
-		if (!email || !name || !googleId || !courseNumber || !city || !country) {
+		if (!email || !name || !googleId || !courseName || !city || !country) {
 			return NextResponse.json(
 				{ error: 'All required fields must be provided' },
 				{ status: 400 }
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 			email: email.toLowerCase(),
 			googleId,
 			avatar,
-			courseNumber,
+			courseName,
 			city,
 			country,
 			role: role || 'student',

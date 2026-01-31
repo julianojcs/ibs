@@ -14,6 +14,17 @@ declare module 'next-auth' {
 			avatar?: string
 			role: string
 			isEmailVerified: boolean
+			courseName?: string
+			city?: string
+			country?: string
+			phone?: string
+			whatsapp?: string
+			linkedin?: string
+			instagram?: string
+			github?: string
+			twitter?: string
+			company?: string
+			bio?: string
 		}
 	}
 
@@ -24,6 +35,17 @@ declare module 'next-auth' {
 		avatar?: string
 		role: string
 		isEmailVerified: boolean
+		courseName?: string
+		city?: string
+		country?: string
+		phone?: string
+		whatsapp?: string
+		linkedin?: string
+		instagram?: string
+		github?: string
+		twitter?: string
+		company?: string
+		bio?: string
 	}
 }
 
@@ -83,6 +105,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 						avatar: user.avatar,
 						role: user.role,
 						isEmailVerified: user.emailVerified,
+						courseName: user.courseName,
+						city: user.city,
+						country: user.country,
+						phone: user.phone,
+						whatsapp: user.whatsapp,
+						linkedin: user.linkedin,
+						instagram: user.instagram,
+						github: user.github,
+						twitter: user.twitter,
+						company: user.company,
+						bio: user.bio,
 					}
 				} catch (error) {
 					console.error('Auth error:', error)
@@ -90,10 +123,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				}
 			},
 		}),
-		Google({
-			clientId: process.env.GOOGLE_CLIENT_ID!,
-			clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-		}),
+		// Google({
+		// 	clientId: process.env.GOOGLE_CLIENT_ID!,
+		// 	clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+		// }),
 	],
 	callbacks: {
 		async signIn({ user, account }) {
@@ -124,12 +157,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				token.role = user.role
 				token.avatar = user.avatar
 				token.isEmailVerified = user.isEmailVerified
+				token.courseName = user.courseName
+				token.city = user.city
+				token.country = user.country
+				token.phone = user.phone
+				token.whatsapp = user.whatsapp
+				token.linkedin = user.linkedin
+				token.instagram = user.instagram
+				token.github = user.github
+				token.twitter = user.twitter
+				token.company = user.company
+				token.bio = user.bio
 			}
 
 			if (trigger === 'update' && session) {
-				token.name = session.name
-				token.avatar = session.avatar
-				token.role = session.role
+				return { ...token, ...session }
 			}
 
 			return token
@@ -140,6 +182,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				session.user.role = token.role as string
 				session.user.avatar = token.avatar as string | undefined
 				session.user.isEmailVerified = token.isEmailVerified as boolean
+				session.user.courseName = token.courseName as string | undefined
+				session.user.city = token.city as string | undefined
+				session.user.country = token.country as string | undefined
+				session.user.phone = token.phone as string | undefined
+				session.user.whatsapp = token.whatsapp as string | undefined
+				session.user.linkedin = token.linkedin as string | undefined
+				session.user.instagram = token.instagram as string | undefined
+				session.user.github = token.github as string | undefined
+				session.user.twitter = token.twitter as string | undefined
+				session.user.company = token.company as string | undefined
+				session.user.bio = token.bio as string | undefined
 			}
 
 			return session
