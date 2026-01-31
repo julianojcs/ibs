@@ -30,13 +30,23 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 			(likeId: { toString: () => string }) => likeId.toString() === userId
 		)
 
-		if (hasLiked) {
-			await Photo.findByIdAndUpdate(id, { $pull: { likes: userId } })
-			return NextResponse.json({ liked: false, message: 'Like removed' })
-		}
+		const updateOperation = hasLiked
+			? { $pull: { likes: userId } }
+			: { $addToSet: { likes: userId } }
 
-		await Photo.findByIdAndUpdate(id, { $addToSet: { likes: userId } })
-		return NextResponse.json({ liked: true, message: 'Photo liked!' })
+		const updatedPhoto = await Photo.findByIdAndUpdate(id, updateOperation, {
+			new: true,
+		})
+			.populate('uploadedBy', 'name avatar')
+			.populate('taggedUsers', 'name avatar')
+			.populate('likes', 'name avatar')
+			.lean()
+
+		return NextResponse.json({
+			photo: updatedPhoto,
+			liked: !hasLiked,
+			message: hasLiked ? 'Like removed' : 'Photo liked!',
+		})
 	} catch (err) {
 		console.error('Like photo error:', err)
 		return NextResponse.json(

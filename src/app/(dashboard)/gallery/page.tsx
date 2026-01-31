@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { PhotoCard } from '@/components/gallery/photo-card'
 import { PhotoUpload } from '@/components/gallery/photo-upload'
+import { useInView } from 'react-intersection-observer'
 
 interface PhotoUser {
 	_id: string
@@ -49,23 +50,27 @@ export default function GalleryPage() {
 	const [photos, setPhotos] = useState<Photo[]>([])
 	const [pagination, setPagination] = useState<PaginationData | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
+	const [isFetchingMore, setIsFetchingMore] = useState(false)
 	const [page, setPage] = useState(1)
 	const [isUploadOpen, setIsUploadOpen] = useState(false)
 
-	const fetchPhotos = useCallback(async () => {
-		setIsLoading(true)
+	const { ref, inView } = useInView()
+
+	const fetchPhotos = useCallback(async (pageNum: number) => {
+		if (pageNum === 1) setIsLoading(true)
+		else setIsFetchingMore(true)
 
 		try {
 			const params = new URLSearchParams()
 			if (userIdFilter) params.set('userId', userIdFilter)
-			params.set('page', page.toString())
+			params.set('page', pageNum.toString())
 			params.set('limit', '20')
 
 			const response = await fetch(`/api/photos?${params}`)
 			const data = await response.json()
 
 			if (response.ok) {
-				setPhotos(data.photos)
+				setPhotos((prev) => pageNum === 1 ? data.photos : [...prev, ...data.photos])
 				setPagination(data.pagination)
 			}
 		} catch (err) {
@@ -73,12 +78,24 @@ export default function GalleryPage() {
 			toast.error('Failed to load photos')
 		} finally {
 			setIsLoading(false)
+			setIsFetchingMore(false)
 		}
-	}, [userIdFilter, page])
+	}, [userIdFilter])
 
 	useEffect(() => {
-		fetchPhotos()
-	}, [fetchPhotos])
+		// Reset when filter changes
+		setPhotos([])
+		setPage(1)
+		fetchPhotos(1)
+	}, [userIdFilter, fetchPhotos])
+
+	useEffect(() => {
+		if (inView && pagination && page < pagination.totalPages && !isFetchingMore && !isLoading) {
+			const nextPage = page + 1
+			setPage(nextPage)
+			fetchPhotos(nextPage)
+		}
+	}, [inView, pagination, page, isFetchingMore, isLoading, fetchPhotos])
 
 	const handleUpload = async (data: PhotoUploadData) => {
 		const formData = new FormData()
@@ -117,7 +134,8 @@ export default function GalleryPage() {
 		}
 
 		toast.success('Photo uploaded successfully!')
-		fetchPhotos()
+		setPage(1)
+		fetchPhotos(1)
 	}
 
 	const handleLike = async (photoId: string) => {
@@ -127,7 +145,13 @@ export default function GalleryPage() {
 			})
 
 			if (response.ok) {
-				fetchPhotos()
+				const { photo: updatedPhoto } = await response.json()
+
+				setPhotos((prevPhotos) =>
+					prevPhotos.map((p) =>
+						p._id === photoId ? { ...p, likes: updatedPhoto.likes } : p
+					)
+				)
 			}
 		} catch (err) {
 			console.error('Failed to like photo:', err)
@@ -143,7 +167,7 @@ export default function GalleryPage() {
 
 			if (response.ok) {
 				toast.success('Photo deleted successfully!')
-				fetchPhotos()
+				setPhotos((prev) => prev.filter(p => p._id !== photoId))
 			} else {
 				const error = await response.json()
 				toast.error(error.error || 'Failed to delete photo')
@@ -156,7 +180,7 @@ export default function GalleryPage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 				<div>
 					<h1 className="text-3xl font-bold">Photo Gallery</h1>
 					<p className="text-muted-foreground">
@@ -164,13 +188,13 @@ export default function GalleryPage() {
 					</p>
 				</div>
 
-				<Button onClick={() => setIsUploadOpen(true)}>
+				<Button onClick={() => setIsUploadOpen(true)} className="w-full sm:w-auto">
 					<Plus className="mr-2 h-4 w-4" />
 					Upload Photo
 				</Button>
 			</div>
 
-			{isLoading ? (
+			{isLoading && page === 1 ? (
 				<div className="flex items-center justify-center py-12">
 					<Loader2 className="h-8 w-8 animate-spin text-primary" />
 				</div>
@@ -186,7 +210,7 @@ export default function GalleryPage() {
 				</div>
 			) : (
 				<>
-					<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					<div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 						{photos.map((photo) => (
 							<PhotoCard
 								key={photo._id}
@@ -197,31 +221,12 @@ export default function GalleryPage() {
 						))}
 					</div>
 
-					{pagination && pagination.totalPages > 1 && (
-						<div className="flex items-center justify-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setPage((p) => Math.max(1, p - 1))}
-								disabled={page === 1}
-							>
-								Previous
-							</Button>
-							<span className="text-sm text-muted-foreground">
-								Page {page} of {pagination.totalPages}
-							</span>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() =>
-									setPage((p) => Math.min(pagination.totalPages, p + 1))
-								}
-								disabled={page === pagination.totalPages}
-							>
-								Next
-							</Button>
-						</div>
-					)}
+					{/* Loading sentinel */}
+					<div ref={ref} className="py-8 flex justify-center">
+						{isFetchingMore && (
+							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+						)}
+					</div>
 				</>
 			)}
 

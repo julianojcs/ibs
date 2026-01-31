@@ -54,6 +54,8 @@ export function LoginForm() {
 					'Please verify your email before signing in': 'Please verify your email before signing in. Check your inbox.',
 					'Your account has been deactivated': 'Your account has been deactivated. Please contact support.',
 					'Please sign in with Google': 'This account uses Google Sign-In. Please click "Sign in with Google" below.',
+					'Configuration': 'There is a problem with the server configuration. Please contact support.',
+					'AccessDenied': 'Access denied. You do not have permission to log in.',
 				}
 				setError(errorMap[result.error] || result.error)
 				return

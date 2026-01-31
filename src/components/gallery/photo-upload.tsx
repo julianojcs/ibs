@@ -118,7 +118,12 @@ export function PhotoUpload({ isOpen, onClose, onUpload }: PhotoUploadProps) {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleClose}>
-			<DialogContent className="max-w-lg">
+			<DialogContent
+				className="max-w-lg"
+				onInteractOutside={(e) => {
+					e.preventDefault()
+				}}
+			>
 				<DialogHeader>
 					<DialogTitle>Upload Photo</DialogTitle>
 					<DialogDescription>

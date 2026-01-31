@@ -36,48 +36,57 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				password: { label: 'Password', type: 'password' },
 			},
 			async authorize(credentials) {
-				if (!credentials?.email || !credentials?.password) {
-					throw new Error('Email and password are required')
-				}
+				try {
+					if (!credentials?.email || !credentials?.password) {
+						return null
+					}
 
-				await connectDB()
+					await connectDB()
 
-				const user = await User.findOne({
-					email: (credentials.email as string).toLowerCase(),
-				}).select('+password')
+					const user = await User.findOne({
+						email: (credentials.email as string).toLowerCase(),
+					}).select('+password')
 
-				if (!user) {
-					throw new Error('Invalid email or password')
-				}
+					if (!user) {
+						return null
+					}
 
-				if (!user.password) {
-					throw new Error('Please sign in with Google')
-				}
+					if (!user.password) {
+						return null // Google account
+					}
 
-				const isPasswordValid = await bcrypt.compare(
-					credentials.password as string,
-					user.password
-				)
+					const isPasswordValid = await bcrypt.compare(
+						credentials.password as string,
+						user.password
+					)
 
-				if (!isPasswordValid) {
-					throw new Error('Invalid email or password')
-				}
+					if (!isPasswordValid) {
+						return null
+					}
 
-				if (!user.emailVerified) {
-					throw new Error('Please verify your email before signing in')
-				}
+					if (!user.emailVerified) {
+						// Custom handling for unverified email could be done by throwing
+						// but let's stick to generic failure to avoid Configuration error for now
+						// or we can chance throwing a specific string that matches our client map
+						// BUT NextAuth v5 is strict. Let's return null to solve the immediate blocking issue.
+						return null
+					}
 
-				if (!user.isActive) {
-					throw new Error('Your account has been deactivated')
-				}
+					if (!user.isActive) {
+						return null
+					}
 
-				return {
-					id: user._id.toString(),
-					email: user.email,
-					name: user.name,
-					avatar: user.avatar,
-					role: user.role,
-					isEmailVerified: user.emailVerified,
+					return {
+						id: user._id.toString(),
+						email: user.email,
+						name: user.name,
+						avatar: user.avatar,
+						role: user.role,
+						isEmailVerified: user.emailVerified,
+					}
+				} catch (error) {
+					console.error('Auth error:', error)
+					return null
 				}
 			},
 		}),

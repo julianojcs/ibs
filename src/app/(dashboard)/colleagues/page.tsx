@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { ColleagueCard } from '@/components/colleagues/colleague-card'
 import { USER_ROLES } from '@/lib/constants'
+import { useInView } from 'react-intersection-observer'
 
 interface IUser {
 	_id: string
@@ -42,50 +43,63 @@ export default function ColleaguesPage() {
 	const [colleagues, setColleagues] = useState<IUser[]>([])
 	const [pagination, setPagination] = useState<PaginationData | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
+	const [isFetchingMore, setIsFetchingMore] = useState(false)
 	const [search, setSearch] = useState('')
 	const [roleFilter, setRoleFilter] = useState<string>('')
 	const [page, setPage] = useState(1)
 
-	const fetchColleagues = useCallback(async () => {
-		setIsLoading(true)
+	const { ref, inView } = useInView()
+
+	const fetchColleagues = useCallback(async (pageNum: number) => {
+		if (pageNum === 1) setIsLoading(true)
+		else setIsFetchingMore(true)
 
 		try {
 			const params = new URLSearchParams()
 			if (search) params.set('search', search)
 			if (roleFilter && roleFilter !== 'all') params.set('role', roleFilter)
-			params.set('page', page.toString())
+			params.set('page', pageNum.toString())
 			params.set('limit', '12')
 
 			const response = await fetch(`/api/users?${params}`)
 			const data = await response.json()
 
 			if (response.ok) {
-				setColleagues(data.users)
+				setColleagues((prev) => pageNum === 1 ? data.users : [...prev, ...data.users])
 				setPagination(data.pagination)
 			}
 		} catch (err) {
 			console.error('Failed to fetch colleagues:', err)
 		} finally {
 			setIsLoading(false)
+			setIsFetchingMore(false)
 		}
-	}, [search, roleFilter, page])
+	}, [search, roleFilter])
 
 	useEffect(() => {
 		const debounce = setTimeout(() => {
-			fetchColleagues()
+			setColleagues([])
+			setPage(1)
+			fetchColleagues(1)
 		}, 300)
 
 		return () => clearTimeout(debounce)
-	}, [fetchColleagues])
+	}, [search, roleFilter, fetchColleagues])
+
+	useEffect(() => {
+		if (inView && pagination && page < pagination.totalPages && !isFetchingMore && !isLoading) {
+			const nextPage = page + 1
+			setPage(nextPage)
+			fetchColleagues(nextPage)
+		}
+	}, [inView, pagination, page, isFetchingMore, isLoading, fetchColleagues])
 
 	const handleSearch = (value: string) => {
 		setSearch(value)
-		setPage(1)
 	}
 
 	const handleRoleFilter = (value: string) => {
 		setRoleFilter(value)
-		setPage(1)
 	}
 
 	return (
@@ -126,7 +140,7 @@ export default function ColleaguesPage() {
 			</div>
 
 			{/* Grid */}
-			{isLoading ? (
+			{isLoading && page === 1 ? (
 				<div className="flex items-center justify-center py-12">
 					<Loader2 className="h-8 w-8 animate-spin text-primary" />
 				</div>
@@ -142,32 +156,12 @@ export default function ColleaguesPage() {
 						))}
 					</div>
 
-					{/* Pagination */}
-					{pagination && pagination.totalPages > 1 && (
-						<div className="flex items-center justify-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setPage((p) => Math.max(1, p - 1))}
-								disabled={page === 1}
-							>
-								Previous
-							</Button>
-							<span className="text-sm text-muted-foreground">
-								Page {page} of {pagination.totalPages}
-							</span>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() =>
-									setPage((p) => Math.min(pagination.totalPages, p + 1))
-								}
-								disabled={page === pagination.totalPages}
-							>
-								Next
-							</Button>
-						</div>
-					)}
+					{/* Loading sentinel */}
+					<div ref={ref} className="py-8 flex justify-center">
+						{isFetchingMore && (
+							<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+						)}
+					</div>
 				</>
 			)}
 		</div>
