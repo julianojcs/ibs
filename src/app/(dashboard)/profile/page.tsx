@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, Camera, Save, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Loader2, Camera, Save, CheckCircle2, AlertCircle, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +30,9 @@ export default function ProfilePage() {
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 	const [courses, setCourses] = useState<{ name: string; code: string }[]>([])
 	const [isFetchingCourses, setIsFetchingCourses] = useState(true)
+	const [showOnboardingBanner, setShowOnboardingBanner] = useState(false)
 	const fileInputRef = useRef<HTMLInputElement>(null)
+	const searchParams = useSearchParams()
 
 	const {
 		register,
@@ -47,7 +50,6 @@ export default function ProfilePage() {
 			courseName: session?.user?.courseName || '',
 			city: session?.user?.city || '',
 			country: session?.user?.country || '',
-			phone: session?.user?.phone || '',
 			whatsapp: session?.user?.whatsapp || '',
 			linkedin: session?.user?.linkedin || '',
 			instagram: session?.user?.instagram || '',
@@ -72,7 +74,6 @@ export default function ProfilePage() {
 				courseName: session.user.courseName || '',
 				city: session.user.city || '',
 				country: session.user.country || '',
-				phone: session.user.phone || '',
 				whatsapp: session.user.whatsapp || '',
 				linkedin: session.user.linkedin || '',
 				instagram: session.user.instagram || '',
@@ -83,6 +84,15 @@ export default function ProfilePage() {
 			})
 		}
 	}, [session, reset])
+
+	// Check for onboarding parameter
+	useEffect(() => {
+		if (searchParams.get('onboarding') === 'true') {
+			setShowOnboardingBanner(true)
+			// Clean up URL without triggering navigation
+			window.history.replaceState({}, '', '/profile')
+		}
+	}, [searchParams])
 
 	useEffect(() => {
 		const fetchCourses = async () => {
@@ -128,9 +138,9 @@ export default function ProfilePage() {
 		return formatted.substring(0, 19)
 	}
 
-	const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'phone' | 'whatsapp') => {
+	const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const formatted = formatPhoneNumber(e.target.value)
-		setValue(fieldName, formatted, { shouldValidate: true })
+		setValue('whatsapp', formatted, { shouldValidate: true })
 	}
 
 	const handleAvatarClick = () => {
@@ -205,7 +215,6 @@ export default function ProfilePage() {
 				courseName: data.courseName,
 				city: data.city,
 				country: data.country,
-				phone: data.phone,
 				whatsapp: data.whatsapp,
 				linkedin: data.linkedin,
 				instagram: data.instagram,
@@ -213,6 +222,7 @@ export default function ProfilePage() {
 				twitter: data.twitter,
 				company: data.company,
 				bio: data.bio,
+				profileCompleted: result.user?.profileCompleted ?? false,
 			})
 
 			toast.success('Profile updated successfully!')
@@ -240,6 +250,33 @@ export default function ProfilePage() {
 					Manage your account settings and public profile
 				</p>
 			</div>
+
+			{/* Onboarding Welcome Banner */}
+			{showOnboardingBanner && (
+				<div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-6 text-white relative">
+					<button
+						onClick={() => setShowOnboardingBanner(false)}
+						className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+						aria-label="Close banner"
+					>
+						<X className="h-5 w-5" />
+					</button>
+					<div className="flex items-start gap-4">
+						<div className="flex-shrink-0 p-2 bg-white/20 rounded-full">
+							<Sparkles className="h-8 w-8" />
+						</div>
+						<div>
+							<h2 className="text-xl font-bold mb-2">
+								Welcome to IBS London! 🎉
+							</h2>
+							<p className="text-blue-100">
+								Complete your profile by adding your social links so your classmates can connect with you.
+								Share at least <strong>2 social links</strong> (LinkedIn, Instagram, WhatsApp, X, or GitHub) to unlock the full experience!
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* Avatar Section */}
 			<Card>
@@ -368,17 +405,19 @@ export default function ProfilePage() {
 								<Label htmlFor="courseName">Course Name</Label>
 								<Select
 									value={selectedCourse}
-									onValueChange={(value) => setValue('courseName', value)}
+									onValueChange={(value) => setValue('courseName', value, { shouldValidate: true })}
 									disabled={isLoading || isFetchingCourses}
 								>
 									<SelectTrigger>
-										<SelectValue placeholder={isFetchingCourses ? "Loading courses..." : "Select course"} />
+										<SelectValue placeholder={isFetchingCourses ? "Loading courses..." : "Select course"}>
+											{selectedCourse ? (courses.find(c => c.name === selectedCourse)?.code || selectedCourse) : null}
+										</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
 										{courses.length > 0 ? (
 											courses.map((course) => (
 												<SelectItem key={course.code} value={course.name} textValue={course.code}>
-													{course.name} ({course.code})
+													{course.name}
 												</SelectItem>
 											))
 										) : (
@@ -435,23 +474,12 @@ export default function ProfilePage() {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="phone">Phone (with DDI)</Label>
-								<Input
-									id="phone"
-									placeholder="+55 (11) 99999-9999"
-									{...register('phone')}
-									onChange={(e) => handlePhoneChange(e, 'phone')}
-									disabled={isLoading}
-								/>
-							</div>
-
-							<div className="space-y-2">
 								<Label htmlFor="whatsapp">WhatsApp (with DDI)</Label>
 								<Input
 									id="whatsapp"
 									placeholder="+55 (11) 99999-9999"
 									{...register('whatsapp')}
-									onChange={(e) => handlePhoneChange(e, 'whatsapp')}
+									onChange={(e) => handlePhoneChange(e)}
 									disabled={isLoading}
 								/>
 							</div>

@@ -19,7 +19,6 @@ export interface IUser extends Document {
 	courseName: string
 	city: string
 	country: string
-	phone?: string
 	whatsapp?: string
 	linkedin?: string
 	instagram?: string
@@ -29,6 +28,7 @@ export interface IUser extends Document {
 	company?: string
 	googleId?: string
 	isActive: boolean
+	profileCompleted: boolean
 	createdAt: Date
 	updatedAt: Date
 }
@@ -94,9 +94,6 @@ const UserSchema = new Schema<IUser>(
 			type: String,
 			required: [true, 'Country is required'],
 		},
-		phone: {
-			type: String,
-		},
 		whatsapp: {
 			type: String,
 		},
@@ -128,6 +125,10 @@ const UserSchema = new Schema<IUser>(
 		isActive: {
 			type: Boolean,
 			default: true,
+		},
+		profileCompleted: {
+			type: Boolean,
+			default: false,
 		},
 	},
 	{

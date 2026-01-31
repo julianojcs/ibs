@@ -17,7 +17,6 @@ declare module 'next-auth' {
 			courseName?: string
 			city?: string
 			country?: string
-			phone?: string
 			whatsapp?: string
 			linkedin?: string
 			instagram?: string
@@ -25,6 +24,7 @@ declare module 'next-auth' {
 			twitter?: string
 			company?: string
 			bio?: string
+			profileCompleted: boolean
 		}
 	}
 
@@ -38,7 +38,6 @@ declare module 'next-auth' {
 		courseName?: string
 		city?: string
 		country?: string
-		phone?: string
 		whatsapp?: string
 		linkedin?: string
 		instagram?: string
@@ -46,6 +45,7 @@ declare module 'next-auth' {
 		twitter?: string
 		company?: string
 		bio?: string
+		profileCompleted: boolean
 	}
 }
 
@@ -108,7 +108,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 						courseName: user.courseName,
 						city: user.city,
 						country: user.country,
-						phone: user.phone,
 						whatsapp: user.whatsapp,
 						linkedin: user.linkedin,
 						instagram: user.instagram,
@@ -116,6 +115,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 						twitter: user.twitter,
 						company: user.company,
 						bio: user.bio,
+						profileCompleted: user.profileCompleted,
 					}
 				} catch (error) {
 					console.error('Auth error:', error)
@@ -160,7 +160,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				token.courseName = user.courseName
 				token.city = user.city
 				token.country = user.country
-				token.phone = user.phone
 				token.whatsapp = user.whatsapp
 				token.linkedin = user.linkedin
 				token.instagram = user.instagram
@@ -168,6 +167,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				token.twitter = user.twitter
 				token.company = user.company
 				token.bio = user.bio
+				token.profileCompleted = user.profileCompleted
 			}
 
 			if (trigger === 'update' && session) {
@@ -185,7 +185,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				session.user.courseName = token.courseName as string | undefined
 				session.user.city = token.city as string | undefined
 				session.user.country = token.country as string | undefined
-				session.user.phone = token.phone as string | undefined
 				session.user.whatsapp = token.whatsapp as string | undefined
 				session.user.linkedin = token.linkedin as string | undefined
 				session.user.instagram = token.instagram as string | undefined
@@ -193,6 +192,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 				session.user.twitter = token.twitter as string | undefined
 				session.user.company = token.company as string | undefined
 				session.user.bio = token.bio as string | undefined
+				session.user.profileCompleted = token.profileCompleted as boolean
 			}
 
 			return session

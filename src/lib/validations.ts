@@ -117,10 +117,6 @@ export const profileSchema = z.object({
 	country: z
 		.string()
 		.min(1, 'Country is required'),
-	phone: z
-		.string()
-		.optional()
-		.or(z.literal('')),
 	whatsapp: z
 		.string()
 		.optional()

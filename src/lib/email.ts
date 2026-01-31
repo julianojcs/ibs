@@ -94,6 +94,76 @@ export async function sendVerificationEmail(
 }
 
 /**
+ * Sends email verification link when user changes their email
+ * @param email - User's new email address
+ * @param token - Verification token
+ * @param userName - User's name for personalization
+ */
+export async function sendEmailChangeVerification(
+	email: string,
+	token: string,
+	userName?: string
+): Promise<void> {
+	const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`
+	const greeting = userName ? `Hi ${userName},` : 'Hi there,'
+
+	await sendEmail({
+		to: email,
+		subject: 'Confirm your new email address - IBS London',
+		html: `
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<meta charset="utf-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			</head>
+			<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5;">
+				<div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+					<div style="background-color: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+						<div style="text-align: center; margin-bottom: 30px;">
+							<h1 style="color: #18181b; margin: 0; font-size: 24px;">IBS London</h1>
+							<p style="color: #71717a; margin-top: 8px;">Classmate Registration System</p>
+						</div>
+
+						<h2 style="color: #18181b; font-size: 20px; margin-bottom: 16px;">Confirm your new email address</h2>
+
+						<p style="color: #3f3f46; line-height: 1.6; margin-bottom: 24px;">
+							${greeting}<br><br>
+							You recently updated the email address associated with your IBS London account. Please click the button below to confirm this change and verify your new email address.
+						</p>
+
+						<div style="text-align: center; margin: 32px 0;">
+							<a href="${verifyUrl}" style="background-color: #2563eb; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+								Confirm New Email
+							</a>
+						</div>
+
+						<p style="color: #dc2626; font-size: 14px; line-height: 1.6; font-weight: 500;">
+							⚠️ Until you verify this email, you won't be able to sign in to your account.
+						</p>
+
+						<p style="color: #71717a; font-size: 14px; line-height: 1.6;">
+							If you didn't make this change, please contact our support team immediately.
+						</p>
+
+						<p style="color: #71717a; font-size: 14px; line-height: 1.6; margin-top: 24px;">
+							If the button doesn't work, copy and paste this link into your browser:
+							<br>
+							<a href="${verifyUrl}" style="color: #2563eb; word-break: break-all;">${verifyUrl}</a>
+						</p>
+					</div>
+
+					<p style="text-align: center; color: #a1a1aa; font-size: 12px; margin-top: 24px;">
+						© ${new Date().getFullYear()} IBS London. All rights reserved.
+					</p>
+				</div>
+			</body>
+			</html>
+		`,
+	})
+}
+
+/**
  * Sends password reset link to user
  * @param email - User's email address
  * @param token - Reset token

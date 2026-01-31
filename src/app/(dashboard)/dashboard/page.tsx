@@ -45,44 +45,48 @@ export default async function DashboardPage() {
 	return (
 		<div className="space-y-8">
 			{/* Welcome Section */}
-			<div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white">
-				<h1 className="text-3xl font-bold mb-2">
+			<div className="border rounded-lg p-4 bg-muted/30">
+				<h1 className="text-xl font-semibold text-foreground">
 					Welcome back, {session?.user?.name?.split(' ')[0]}! 👋
 				</h1>
-				<p className="text-blue-100 text-lg">
+				<p className="text-muted-foreground text-sm mt-1">
 					Connect with your IBS London classmates and share your memories.
 				</p>
 			</div>
 
 			{/* Stats */}
 			<div className="grid gap-4 md:grid-cols-3">
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Total Classmates
-						</CardTitle>
-						<Users className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{totalUsers}</div>
-						<p className="text-xs text-muted-foreground">
-							Registered participants
-						</p>
-					</CardContent>
-				</Card>
+				<Link href="/colleagues">
+					<Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">
+								Total Classmates
+							</CardTitle>
+							<Users className="h-4 w-4 text-muted-foreground" />
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold">{totalUsers}</div>
+							<p className="text-xs text-muted-foreground">
+								Registered participants
+							</p>
+						</CardContent>
+					</Card>
+				</Link>
 
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">Photos Shared</CardTitle>
-						<Image className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{totalPhotos}</div>
-						<p className="text-xs text-muted-foreground">
-							Memories from London
-						</p>
-					</CardContent>
-				</Card>
+				<Link href="/gallery">
+					<Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">Photos Shared</CardTitle>
+							<Image className="h-4 w-4 text-muted-foreground" />
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold">{totalPhotos}</div>
+							<p className="text-xs text-muted-foreground">
+								Memories from London
+							</p>
+						</CardContent>
+					</Card>
+				</Link>
 
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -117,12 +121,12 @@ export default async function DashboardPage() {
 							No members yet. Be the first!
 						</p>
 					) : (
-						<div className="flex flex-wrap gap-4">
+						<div className="flex flex-col md:flex-row md:flex-wrap gap-2 md:gap-4">
 							{recentUsers.map((user) => (
 								<Link
 									key={user._id.toString()}
 									href={`/colleagues/${user._id}`}
-									className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+									className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors w-full md:w-auto"
 								>
 									<Avatar>
 										<AvatarImage src={user.avatar} alt={user.name} />

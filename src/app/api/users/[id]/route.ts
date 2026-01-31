@@ -5,7 +5,7 @@ import { User } from '@/models/user'
 import { auth } from '@/lib/auth'
 import { profileSchema } from '@/lib/validations'
 import { createError, formatErrorResponse, ErrorCode } from '@/lib/errors'
-import { sendVerificationEmail } from '@/lib/email'
+import { sendEmailChangeVerification } from '@/lib/email'
 
 interface RouteParams {
 	params: Promise<{ id: string }>
@@ -97,6 +97,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 			updateData.verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
 		}
 
+		// Calculate profile completion based on social fields
+		const socialFields = ['linkedin', 'instagram', 'twitter', 'whatsapp', 'github']
+		const filledSocialFields = socialFields.filter(
+			(field) => updateData[field] && updateData[field].trim() !== ''
+		).length
+		updateData.profileCompleted = filledSocialFields >= 2
+
 		const user = await User.findByIdAndUpdate(
 			id,
 			{ $set: updateData },
@@ -105,7 +112,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
 		if (emailChanged && user) {
 			try {
-				await sendVerificationEmail(user.email, updateData.verificationToken)
+				await sendEmailChangeVerification(user.email, updateData.verificationToken, user.name)
 			} catch (emailError) {
 				console.error('Failed to send verification email for email change:', emailError)
 			}

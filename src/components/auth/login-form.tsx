@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signIn } from 'next-auth/react'
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Mail, Lock, Eye, EyeOff, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,26 +20,91 @@ import {
 } from '@/components/ui/card'
 import { loginSchema, type LoginFormData } from '@/lib/validations'
 
+interface CheckCredentialsResponse {
+	success: boolean
+	reason?: string
+	email?: string
+	message: string
+}
+
 export function LoginForm() {
 	const router = useRouter()
 	const [isLoading, setIsLoading] = useState(false)
 	const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+	const [isResending, setIsResending] = useState(false)
 	const [showPassword, setShowPassword] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [emailNotVerified, setEmailNotVerified] = useState<string | null>(null)
+	const [resendSuccess, setResendSuccess] = useState<string | null>(null)
 
 	const {
 		register,
 		handleSubmit,
+		watch,
 		formState: { errors },
 	} = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
 	})
 
+	const emailValue = watch('email')
+
+	const handleResendVerification = async () => {
+		const emailToResend = emailNotVerified || emailValue
+		if (!emailToResend) return
+
+		setIsResending(true)
+		setResendSuccess(null)
+
+		try {
+			const response = await fetch('/api/auth/resend-verification', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: emailToResend }),
+			})
+
+			const data = await response.json()
+
+			if (response.ok) {
+				setResendSuccess(data.message)
+				setError(null)
+			} else {
+				setError(data.error || 'Failed to resend verification email.')
+			}
+		} catch (err) {
+			setError('Failed to resend verification email. Please try again.')
+		} finally {
+			setIsResending(false)
+		}
+	}
+
 	const handleFormSubmit = async (data: LoginFormData) => {
 		setIsLoading(true)
 		setError(null)
+		setEmailNotVerified(null)
+		setResendSuccess(null)
 
 		try {
+			// First, check credentials and email verification status
+			const checkResponse = await fetch('/api/auth/check-credentials', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: data.email, password: data.password }),
+			})
+
+			const checkResult: CheckCredentialsResponse = await checkResponse.json()
+
+			if (!checkResponse.ok || !checkResult.success) {
+				if (checkResult.reason === 'email_not_verified') {
+					setEmailNotVerified(checkResult.email || data.email)
+					setError(null) // Clear generic error
+					return
+				}
+
+				setError(checkResult.message)
+				return
+			}
+
+			// Credentials are valid and email is verified, proceed with NextAuth signIn
 			const result = await signIn('credentials', {
 				email: data.email,
 				password: data.password,
@@ -47,13 +112,10 @@ export function LoginForm() {
 			})
 
 			if (result?.error) {
-				// Parse NextAuth error messages to user-friendly ones
+				// This shouldn't happen if check-credentials passed, but handle it just in case
 				const errorMap: Record<string, string> = {
 					'CredentialsSignin': 'Invalid email or password. Please check your credentials.',
 					'Invalid email or password': 'Invalid email or password. Please check your credentials.',
-					'Please verify your email before signing in': 'Please verify your email before signing in. Check your inbox.',
-					'Your account has been deactivated': 'Your account has been deactivated. Please contact support.',
-					'Please sign in with Google': 'This account uses Google Sign-In. Please click "Sign in with Google" below.',
 					'Configuration': 'There is a problem with the server configuration. Please contact support.',
 					'AccessDenied': 'Access denied. You do not have permission to log in.',
 				}
@@ -105,7 +167,56 @@ export function LoginForm() {
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{error && (
+				{/* Success message for email resend */}
+				{resendSuccess && (
+					<div
+						className="bg-green-500/10 text-green-600 text-sm p-3 rounded-md"
+						role="status"
+					>
+						{resendSuccess}
+					</div>
+				)}
+
+				{/* Email not verified message with resend button */}
+				{emailNotVerified && (
+					<div
+						className="bg-amber-500/10 text-amber-700 text-sm p-4 rounded-md space-y-3"
+						role="alert"
+					>
+						<div className="flex items-start gap-2">
+							<Mail className="h-5 w-5 flex-shrink-0 mt-0.5" />
+							<div>
+								<p className="font-medium">Email verification required</p>
+								<p className="mt-1 text-amber-600">
+									Please verify your email address before signing in. Check your inbox for the verification link.
+								</p>
+							</div>
+						</div>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="w-full border-amber-300 text-amber-700 hover:bg-amber-100"
+							onClick={handleResendVerification}
+							disabled={isResending}
+						>
+							{isResending ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Sending...
+								</>
+							) : (
+								<>
+									<RefreshCw className="mr-2 h-4 w-4" />
+									Resend verification email
+								</>
+							)}
+						</Button>
+					</div>
+				)}
+
+				{/* Generic error message */}
+				{error && !emailNotVerified && (
 					<div
 						className="bg-destructive/10 text-destructive text-sm p-3 rounded-md"
 						role="alert"
