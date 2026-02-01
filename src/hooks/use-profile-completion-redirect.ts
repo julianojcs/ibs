@@ -33,8 +33,17 @@ export function useProfileCompletionRedirect() {
 			return
 		}
 
+		// Calculate profile completion from session social fields directly
+		// More reliable than relying on profileCompleted flag
+		const socialFields = ['linkedin', 'instagram', 'twitter', 'whatsapp', 'github'] as const
+		const filledCount = socialFields.filter((field) => {
+			const value = session?.user?.[field]
+			return value && value.trim() !== ''
+		}).length
+		const isProfileComplete = filledCount >= 2
+
 		// Check if profile is incomplete
-		if (session?.user && !session.user.profileCompleted) {
+		if (session?.user && !isProfileComplete) {
 			// Mark that we've shown the prompt this session
 			sessionStorage.setItem('ibs_profile_prompt_shown', 'true')
 

@@ -1,36 +1,69 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { X, UserCircle, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+const STORAGE_KEY = 'ibs_profile_banner_dismissed'
+
 export function ProfileCompletionBanner() {
 	const { data: session } = useSession()
 	const router = useRouter()
 	const [isDismissed, setIsDismissed] = useState(false)
+	const [isClient, setIsClient] = useState(false)
 
-	// Don't show banner if:
-	// - Session not loaded
-	// - Profile is already completed
-	// - Banner was dismissed this session
-	if (!session?.user || session.user.profileCompleted || isDismissed) {
+	// Ensure we're on client side
+	useEffect(() => {
+		setIsClient(true)
+
+		// Check localStorage for permanent dismissal
+		if (typeof window !== 'undefined') {
+			const dismissed = localStorage.getItem(STORAGE_KEY)
+			if (dismissed === 'true') {
+				setIsDismissed(true)
+			}
+		}
+	}, [])
+
+	// Don't show if not on client yet, session not loaded, or dismissed
+	if (!isClient || !session?.user || isDismissed) {
 		return null
 	}
 
-	// Calculate completion percentage for display
+	// Calculate completion from session social fields directly (more reliable than profileCompleted flag)
 	const socialFields = ['linkedin', 'instagram', 'twitter', 'whatsapp', 'github'] as const
 	const filledCount = socialFields.filter((field) => {
 		const value = session.user[field]
 		return value && value.trim() !== ''
 	}).length
+
+	// Profile is complete if user has 2+ social fields filled
+	const isProfileComplete = filledCount >= 2
+
+	// If profile is complete, permanently dismiss and don't show
+	if (isProfileComplete) {
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, 'true')
+		}
+		return null
+	}
+
 	const percentage = Math.round((filledCount / socialFields.length) * 100)
+
+	const handleDismiss = () => {
+		// Permanently dismiss using localStorage
+		if (typeof window !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, 'true')
+		}
+		setIsDismissed(true)
+	}
 
 	return (
 		<div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 dark:from-amber-900/30 dark:via-orange-900/30 dark:to-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-4 mb-6 relative">
 			<button
-				onClick={() => setIsDismissed(true)}
+				onClick={handleDismiss}
 				className="absolute top-3 right-3 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors"
 				aria-label="Dismiss banner"
 			>
